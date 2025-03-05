@@ -1,14 +1,21 @@
 # Dave
 Digital Attenuation of Valued Experiences
 
-# Emergent Alife Experiment: Wavelet-Driven Data Exploration
+# Emergent Alife Experiment
 
 ## Description
 
 This project explores the potential for emergent behavior in a simplified artificial life (Alife) form. It utilizes real-world audio data processed through a Haar wavelet transform, storing the resulting coefficients as fundamental data points representing the characteristics of all the signals in the recording, which we correlate to find strong patterns.
 
 Haarison is soul of DAVE. Haarison is the means for this artificial life to interpret the enironment environment around it. Haarison is my biased, anthropomorphized interpretation of one version of the newest life form on the planet. By removing as much of the bias as possible, I hope to see how the life form interacts with our environment. 
-I tried to come up with a purpose that was less guided by any function that I predetermined but couldn't get past the fact that any system, biological or not, has a purpose (or did). You can't just be a collection of stuff that doesn't coordinate in any way for any purpose. Even the most simple biological life forms have basic 'programming'. So I had to give an purpose to the wavelets function, and that is to fill memory registers. The next issue I ran into was trying to set limits or paramaters on the raw data as it is applied to the memory registers, again a vector for bias that had to be addressed. I chose to address this by recording the raw data into a json file and then compiling the raw data into memory registers 'off-line'. Some simple intent can be set at this level by adding a correlation function to analyze relationships in the raw data in the memory registers. Function, Purpose, Intent.
+
+I tried to come up with a purpose that was less guided by any function that I predetermined but couldn't get past the fact that any system, biological or not, has a purpose (or did). You can't just be a collection of stuff that doesn't coordinate in any way for any purpose. Even the most simple biological life forms have basic 'programming'. So I felt had to give a purpose to the wavelets function, and that is to fill memory registers. 
+
+The next issue I ran into was trying to set limits or paramaters on the raw data as it is applied to the memory registers, again a vector for bias that had to be addressed. I chose to address this by recording the raw data into a json file and then compiling the raw data into memory registers 'off-line'. My basis for this is the bias that humans process information from their daily experiences like this, to some basic degree. 
+
+Some simple intent can be set at this level by adding a correlation function to analyze relationships in the raw data in the memory registers. 
+
+Function, Purpose, Intent.
 
 For more info, please read the white paper, in development, @ www.the-indi.ca
 
