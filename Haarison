@@ -1,10 +1,11 @@
-import pyaudio
-import wave
-import pywt
-import json
-import time
 import os
+import time
 from datetime import datetime
+import wave
+import pyaudio
+import numpy as np
+import pywt
+import pandas as pd  # standard spreadsheet builder
 
 def record_audio(output_dir="recordings", record_seconds=10):
     """Records audio from the microphone, saves to a unique WAV file, returns filename."""
@@ -22,22 +23,18 @@ def record_audio(output_dir="recordings", record_seconds=10):
                     input=True)
 
     frames = []
-
     print(f"Recording for {record_seconds} seconds...")
 
-    for i in range(0, int(fs / chunk * record_seconds)):
-        data = stream.read(chunk)
+    for _ in range(0, int(fs / chunk * record_seconds)):
+        data = stream.read(chunk, exception_on_overflow=False)
         frames.append(data)
 
     stream.stop_stream()
     stream.close()
     p.terminate()
 
-    # Create a unique filename based on timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     wav_filename = os.path.join(output_dir, f"recording_{timestamp}.wav")
-
-    # Ensure the directory exists
     os.makedirs(output_dir, exist_ok=True)
 
     wf = wave.open(wav_filename, 'wb')
@@ -49,37 +46,57 @@ def record_audio(output_dir="recordings", record_seconds=10):
     print(f"Recording saved to {wav_filename}")
     return wav_filename
 
-def process_audio(wav_file, output_dir="wavelet_data"):
-    """Processes a WAV file with Haar wavelet transform, saves to unique JSON."""
+def process_audio_to_spreadsheet(wav_file, output_dir="wavelet_spreadsheets", time_slice_ms=100):
+    """
+    Slices the audio into time windows (e.g. 100ms) and computes the 
+    Haar wavelet energy bands for each window. Outputs a clean CSV spreadsheet.
+    """
     wf = wave.open(wav_file, 'rb')
-    frames = wf.readframes(-1)
-    frames_int16 = wave.struct.unpack(f'{wf.getnframes()}h', frames)
+    n_frames = wf.getnframes()
+    framerate = wf.getframerate()
+    audio_bytes = wf.readframes(n_frames)
+    wf.close()
 
-    coeffs = pywt.wavedec(frames_int16, 'haar', level=4)
+    # Fast conversion to numpy array (avoids struct errors)
+    audio_data = np.frombuffer(audio_bytes, dtype=np.int16).astype(np.float32)
 
-    output_data = {
-        "a4": coeffs[0].tolist(),
-        "d4": coeffs[1].tolist(),
-        "d3": coeffs[2].tolist(),
-        "d1": coeffs[4].tolist(),
-    }
+    # Number of samples per time window (e.g., 100ms = 4410 samples at 44.1kHz)
+    window_samples = int(framerate * (time_slice_ms / 1000.0))
+    total_slices = len(audio_data) // window_samples
 
-    # Create a unique filename based on the WAV filename's timestamp
-    timestamp = os.path.splitext(os.path.basename(wav_file))[0].split('_')[-2:]
-    timestamp = '_'.join(timestamp)
-    json_filename = os.path.join(output_dir, f"wavelet_{timestamp}.json")
+    rows = []
 
-    # Ensure the directory exists
+    for i in range(total_slices):
+        start = i * window_samples
+        end = start + window_samples
+        slice_data = audio_data[start:end]
+
+        # Haar wavelet decomposition (Level 4: A4, D4, D3, D2, D1)
+        coeffs = pywt.wavedec(slice_data, 'haar', level=4)
+        a4, d4, d3, d2, d1 = coeffs
+
+        # Calculate average magnitude (energy) in each band for this slice
+        # Low frequency = overall hum/tone; High frequency = sharp sounds/clicks
+        rows.append({
+            "time_sec": round((i * time_slice_ms) / 1000.0, 2),
+            "A4_baseline_low": float(np.mean(np.abs(a4))),
+            "D4_mid_low": float(np.mean(np.abs(d4))),
+            "D3_mid": float(np.mean(np.abs(d3))),
+            "D2_mid_high": float(np.mean(np.abs(d2))),
+            "D1_sharp_high": float(np.mean(np.abs(d1))),
+        })
+
+    df = pd.DataFrame(rows)
+
     os.makedirs(output_dir, exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    csv_filename = os.path.join(output_dir, f"wavelet_sheet_{timestamp}.csv")
+    df.to_csv(csv_filename, index=False)
 
-    with open(json_filename, "w") as f:
-        json.dump(output_data, f, indent=4)
-    print(f"Wavelet data saved to {json_filename}")
-    return json_filename
+    print(f"Spreadsheet saved to {csv_filename}")
+    return csv_filename
 
-# --- Main Execution ---
 if __name__ == "__main__":
-    wav_filename = record_audio()
-    json_filename = process_audio(wav_filename)
-    time.sleep(1)
-    print("Done!")
+    wav_filename = record_audio(record_seconds=5)
+    csv_filename = process_audio_to_spreadsheet(wav_filename)
+    print("Complete! Open the CSV in Excel to see your raw Haar data rows.")
